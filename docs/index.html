@@ -79,8 +79,8 @@ function _canvasUpdate(){
   if( result && result.data ){ 
     drawLine(ctx, result.location);       // 見つかった箇所に線を引く
 
-    canvas.style.display = 'block';
-    video.style.display = 'none';
+    $('#videoPreview').css( 'display', 'none' );
+    $('#canvasPreview').css( 'display', 'none' );
     video.pause();
 
     //. 座標は（<video> ではなく） <canvas> 内のもの
@@ -134,8 +134,7 @@ body{
     <h4>Canvas Preview</h4>
   </div>
 
-  <div class="container" id="info">
-
+  <div class="container" id="info" style="display: none;">
   </div>
 </body>
 </html>
