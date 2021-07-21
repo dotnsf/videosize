@@ -1,0 +1,235 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3c.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+<meta charset="utf8"/>
+<meta http-equiv="pragma" content="no-cache"/>
+<script src="//code.jquery.com/jquery-2.2.4.min.js"></script>
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="Video Size"/>
+
+<title>Video Size</title>
+
+<style type="text/css">
+/* 全体のレイアウト調整 */
+#contents {
+  /* display: flex;
+  width: 650px; */
+  text-align: center;
+}
+
+#camera,
+#picture{
+  justify-content: center;
+  margin: 5px;
+}
+
+/* リーダー部分 */
+#picture {
+  /*display: none; */
+  border: 10px solid #007bff !important;
+}
+</style>
+
+<script src="//cdn.jsdelivr.net/npm/jsqr@1.3.1/dist/jsQR.min.js"></script>
+<script>
+var video = null;     // === document.querySelector("#camera");
+var canvas = null;    // === document.querySelector("#picture");
+var ctx = null;
+
+$(function(){
+  video = document.getElementById( 'camera' ); 
+  canvas = document.getElementById( 'picture' ); 
+  ctx = canvas.getContext("2d");
+
+  /* for iPhone 7,8 */
+  video.setAttribute( 'autoplay', true );
+  video.setAttribute( 'muted', '' );
+  video.setAttribute( 'playsinline', '' );
+
+  /** カメラ設定 */
+  const constraints = {
+    audio: false,
+    video: {
+      width: 300,
+      height: 200,
+      facingMode: "user"   // フロントカメラを利用する
+    }
+  };
+
+  if( isMobile() ){
+    constraints.video.facingMode = 'environment';
+  }
+
+  /**
+   * カメラを<video>と同期
+   */
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then((stream) => {
+      video.srcObject = stream;
+      video.onloadedmetadata = (e) => {
+        video.play();
+
+        // QRコードのチェック開始
+        checkPicture();
+      };
+    })
+    .catch((err) => {
+      console.log(err.name + ": " + err.message);
+    });
+});
+
+//. ID作成用関数
+function generateId(){
+  var s = 1000;
+  var id = '' + ( new Date().getTime().toString(16) ) + Math.floor( s * Math.random() ).toString(16);
+
+  return id;
+}
+
+
+  /**
+   * QRコードの読み取り
+   */
+  function checkPicture() {
+    // カメラの映像をCanvasに複写
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // QRコードの読み取り
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+    //----------------------
+    // 存在する場合
+    //----------------------
+    if (code) {
+      /* #334
+      // 結果を表示
+      //drawLine(ctx, code.location);       // 見つかった箇所に線を引く
+
+      // video と canvas を入れ替え
+      canvas.style.display = 'block';
+      video.style.display = 'none';
+      video.pause();
+      */
+
+      //. ３秒後に遷移 #334
+      //setTimeout( function(){
+        if (code.data.startsWith('http')) {
+          window.location.href = code.data;
+        } else {
+          var a = window.location.href.split('/');
+          a.splice(0, 3);
+          var prev_href = '/' + a.join('/');
+          window.location.href = '/register/' + code.data + '?prev_href=/'; // + prev_href;
+        }
+      //}, 3000 );
+    }
+    //----------------------
+    // 存在しない場合
+    //----------------------
+    else {
+      // 0.3秒後にもう一度チェックする
+      setTimeout(() => {
+        checkPicture();
+      }, 300);
+    }
+  }
+
+
+  /**
+   * 発見されたQRコードに線を引く
+   *
+   * @param {Object} ctx
+   * @param {Object} pos
+   * @param {Object} options
+   * @return {void}
+   */
+  function drawLine(ctx, pos, options = { color: "#007bff", size: 5 }) {
+    // 線のスタイル設定
+    ctx.strokeStyle = options.color;
+    ctx.lineWidth = options.size;
+
+    // 線を描く
+    ctx.beginPath();
+    ctx.moveTo(pos.topLeftCorner.x, pos.topLeftCorner.y);         // 左上からスタート
+    ctx.lineTo(pos.topRightCorner.x, pos.topRightCorner.y);       // 右上
+    ctx.lineTo(pos.bottomRightCorner.x, pos.bottomRightCorner.y); // 右下
+    ctx.lineTo(pos.bottomLeftCorner.x, pos.bottomLeftCorner.y);   // 左下
+    ctx.lineTo(pos.topLeftCorner.x, pos.topLeftCorner.y);         // 左上に戻る
+    ctx.stroke();
+  }
+
+  /**
+   * QRコードの読み取り結果を表示する
+   *
+   * @param {String} id
+   * @param {String} data
+   * @return {void}
+   */
+  function setQRResult(id, data) {
+    $(id).innerHTML = escapeHTML(data);
+  }
+
+  /**
+   * jQuery style wrapper
+   *
+   * @param {string} selector
+   * @return {Object}
+  function $(selector) {
+    return (document.querySelector(selector));
+  }
+   */
+
+  /**
+   * HTML表示用に文字列をエスケープする
+   *
+   * @param {string} str
+   * @return {string}
+   */
+  function escapeHTML(str) {
+    let result = "";
+    result = str.replace("&", "&amp;");
+    result = str.replace("'", "&#x27;");
+    result = str.replace("`", "&#x60;");
+    result = str.replace('"', "&quot;");
+    result = str.replace("<", "&lt;");
+    result = str.replace(">", "&gt;");
+    result = str.replace(/\n/, "<br>");
+
+    return (result);
+  }
+
+function isMobile(){
+  var b = false;
+  var ua = navigator.userAgent;
+  if( ( ua.indexOf('iPhone') > 0 || ua.indexOf('Android') > 0 ) && ua.indexOf( 'Mobile' ) > 0 ){
+    b = true;
+  }
+
+  return b;
+}
+</script>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Video Size</a>
+</nav>
+
+<div class="container" style="position: relative; top: 20px;">
+  <section id="contents">
+    <!-- カメラ映像 -->
+    <video id="camera" width="300" height="200" muted></video>
+
+    <!-- 処理用 -->
+    <canvas id="picture" width="300" height="200"></canvas>
+  </section>
+</div>
+
+</body>
+</html>
