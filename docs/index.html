@@ -79,6 +79,10 @@ function _canvasUpdate(){
   if( result && result.data ){ 
     drawLine(ctx, result.location);       // 見つかった箇所に線を引く
 
+    canvas.style.display = 'block';
+    video.style.display = 'none';
+    video.pause();
+
     //. 座標は（<video> ではなく） <canvas> 内のもの
     //. result.location = { bottomLeftCorner: { x: 226.021, y: 223.73 }, topRightCorder: { x: 284.70, y: 189.28 }, .. };
     alert( result.data ); 
@@ -126,7 +130,7 @@ body{
   </div>
 
   <!-- canvas(invisible) -->
-  <div class="container" id="canvasPreview" style="text-align: center;">
+  <div class="container" id="canvasPreview" style="text-align: center; display: none;">
     <h4>Canvas Preview</h4>
   </div>
 
